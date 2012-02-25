@@ -5,25 +5,21 @@ import Control.Monad
 
 import Data.Functor ((<$>))
 
-type Name = String
-
-data Term = Atom Name
-          | Var Name
+data Term = Atom String
+          | Var String
           | Pred Predicate deriving (Show, Eq)
  
 data Rule = Simple Term
           | Complex Term [Term] deriving (Show, Eq)
                                             
-data Predicate = Predicate Name [Term] deriving (Show, Eq)
+data Predicate = Predicate {name :: String, body :: [Term]} deriving (Show, Eq)
 
-data Result = Yes | No | Binding Name Term deriving (Show, Eq)
+data Result = Yes | No | Binding String Term deriving (Show, Eq)
 
-type MGU = [(Name, Term)] -- This should map variables to values.
+type MGU = [(String, Term)] -- This should map variables to values.
 
 merge :: Maybe MGU -> Maybe MGU -> Maybe MGU
-Nothing `merge` _            = Nothing
-_ `merge` Nothing            = Nothing 
-Just left `merge` Just right = Just $ left ++ map (second $ subst left) right
+merge = liftM2 $ \ left right -> left ++ map (second $ subst left) right
 
 subst :: MGU -> Term -> Term
 subst mgu (Var name)             = maybe (Var name) id (lookup name mgu)
@@ -42,8 +38,8 @@ unify (Predicate name1 body1) (Predicate name2 body2)
   where combine mgu (left, right) = go mgu (subst mgu left) (subst mgu right)
         go mgu (Var l) r | not (r `contains` Var l) = Just $ (l, r) : mgu
         go mgu l (Var r) | not (l `contains` Var r) = Just $ (r, l) : mgu
-        go mgu (Pred lp@(Predicate ln lb)) (Pred rp@(Predicate rn rb)) 
-          | ln == rn   = unify lp rp `merge` Just mgu
+        go mgu (Pred left) (Pred right)
+          | name left == name right = unify left right `merge` Just mgu
         go mgu l r = if l == r then Just mgu else Nothing 
         
 resolve :: Term -> [Term] -> Result
