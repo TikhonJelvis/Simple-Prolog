@@ -1,0 +1,6 @@
+# Ignore emacs backup files:
+*~
+*.hi
+*.o
+\#*\#
+dist
