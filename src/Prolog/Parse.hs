@@ -13,7 +13,7 @@ name :: Parser String
 name = liftA2 (:) lower (many idChar) <* spaces
 
 atom :: Parser Term
-atom = Atom <$> name <?> "atom"
+atom = Atom <$> (name <|> many1 digit) <?> "atom"
 
 variable :: Parser Term
 variable = Var . Name 0 <$> liftA2 (:) upper (many idChar) <* spaces <?> "variable"
