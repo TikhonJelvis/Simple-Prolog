@@ -1,6 +1,8 @@
 module Main where
 
-import Data.Functor ((<$>))
+import Control.Monad
+
+import Control.Applicative ((<$>), (<$), (<*))
 import Data.List (intercalate)
 
 import System.Environment
@@ -42,4 +44,4 @@ run file = do source <- readFile file
                 where go _ (Left err)   = putStrLn $ "Error: " ++ show err
                       go prog (Right q) = case resolve q <$> prog of
                         Left err -> putStrLn $ "Error: " ++ show err
-                        Right a  -> mapM_ putStrLn $ showResult q a 
+                        Right a  -> foldM_ (\ () b -> () <$ putStr b <* getLine) () $ showResult q a 
