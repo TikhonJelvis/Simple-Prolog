@@ -37,5 +37,5 @@ rule =  (try (Rule <$> predicate <* string ":-" <* spaces <*> body)
 rules :: Parser [Rule]
 rules = spaces *> many1 rule
 
-query :: Parser Predicate
-query = predicate <* char '?' <?> "query"
+query :: Parser [Predicate]
+query = predicate `sepBy` (char ',' *> spaces) <* char '.' <?> "query"
