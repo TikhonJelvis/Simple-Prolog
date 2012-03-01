@@ -2,7 +2,7 @@ module Main where
 
 import Control.Monad
 
-import Control.Applicative ((<$), (<*))
+import Control.Applicative ((<$), (<*), (<$>))
 import Data.List (intercalate)
 
 import System.Environment
@@ -12,11 +12,14 @@ import Text.ParserCombinators.Parsec
 import Prolog.Interpreter
 import Prolog.Parse
 
+type Parsed = Either ParseError
+
 showResult :: Predicate -> [MGU] -> [String]
 showResult _ []      = ["No"]
-showResult q res = map (showMgu . filter (contains (Pred q) . Var . fst)) res
+showResult q res = showMgu . filter (contains (Pred q) . Var . fst) <$> res
   where showMgu []  = "Yes"
-        showMgu mgu = intercalate " " $ map (\(n,v) -> showName n ++ " = " ++ showVal v) mgu
+        showMgu mgu = intercalate " " $ map showBinding mgu
+        showBinding (n,v) = showName n ++ " = " ++ showVal v
         showName (Name 0 n) = n
         showName (Name i n) = n ++ "_" ++ show i
         showVal (Atom atom) = atom
@@ -24,11 +27,9 @@ showResult q res = map (showMgu . filter (contains (Pred q) . Var . fst)) res
         showVal (Pred p)    = show p
         
 repl :: String -> (String -> IO ()) -> IO ()
-repl prompt action = do putStr prompt
-                        inp <- getLine
-                        case inp of
-                          "quit" -> return ()
-                          _      -> action inp >> repl prompt action
+repl prompt action = putStr prompt >> getLine >>= go
+  where go "quit" = return ()
+        go inp    = action inp >> repl prompt action
 
 main :: IO ()
 main = do args <- getArgs
@@ -41,9 +42,10 @@ run :: FilePath -> IO ()
 run file = do source <- readFile file
               let program = parse rules file source
               repl "?-" $ go . extractQuery program
-                where go (Left err)        = putStrLn $ "Error: " ++ show err
-                      go (Right (prog, q)) = printResults q $ resolve q prog
+  where go (Left err)        = putStrLn $ "Error: " ++ show err
+        go (Right (prog, q)) = printResults q $ resolve q prog
 
+extractQuery :: Parsed [Rule] -> String -> Parsed ([Rule], Predicate)
 extractQuery program input = do source  <- program
                                 queries <- parse query "<interactive>" input
                                 let (q,r) = simplify queries

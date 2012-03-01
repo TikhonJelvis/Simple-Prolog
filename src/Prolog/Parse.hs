@@ -24,7 +24,7 @@ args = char '(' *> term `sepBy` (char ',' <* spaces) <* char ')' <* spaces
 predicate :: Parser Predicate
 predicate = negated <|> normal True
   where normal active  = Predicate active <$> name <*> args <?> "predicate"
-        negated = char '~' *> (normal False)
+        negated = (string "~" <|> string "\\+") *> spaces *> (normal False)
 
 term :: Parser Term
 term = try (Pred <$> predicate) <|> atom <|> variable <?> "term"
@@ -38,4 +38,4 @@ rules :: Parser [Rule]
 rules = spaces *> many1 rule
 
 query :: Parser [Predicate]
-query = predicate `sepBy` (char ',' *> spaces) <* char '.' <?> "query"
+query = spaces *> predicate `sepBy` (char ',' *> spaces) <* char '.' <?> "query"

@@ -48,9 +48,9 @@ unify (Predicate _ name1 body1) (Predicate _ name2 body2)
         go mgu l r = if l == r then Just mgu else Nothing 
         
 contains :: Term -> Term -> Bool
-contains v1@Var{} v2@Var{}        = v1 == v2
+contains v1@Var{} v2@Var{}          = v1 == v2
 contains (Pred (Predicate _ _ p)) n = or $ (`contains` n) <$> p
-contains _ _                      = False
+contains _ _                        = False
 
 resolve :: Predicate -> [Rule] -> [MGU]
 resolve goal rules = mapMaybe match (freshen <$> rules) >>= exec
@@ -61,6 +61,4 @@ resolve goal rules = mapMaybe match (freshen <$> rules) >>= exec
         
 simplify :: [Predicate] -> (Predicate, Rule) 
 simplify preds = (goal, Rule goal $ preds)
-  where goal = Predicate True "*" . nub $ terms preds
-        terms []                     = []
-        terms ((Predicate _ _ t):ps) = t ++ terms ps
+  where goal = Predicate True "*" . nub $ preds >>= \ (Predicate _ _ t) -> t
