@@ -1,7 +1,9 @@
-module Prolog.Interpreter (subst, contains, resolve, Term(..), Name(..), Rule(..), Predicate(..), MGU)  where
+module Prolog.Interpreter (simplify, subst, contains, resolve,
+                           Term(..), Name(..), Rule(..), Predicate(..), MGU)  where
 
 import Control.Applicative   ((<$>), (<*>))
 import Control.Arrow  (second)
+import Data.List (nub)
 import Control.Monad
 import Data.Maybe
 
@@ -56,3 +58,9 @@ resolve goal rules = mapMaybe match (freshen <$> rules) >>= exec
         exec ((Rule _ body), mgu) = join (map . second . subst) <$> foldM append mgu body
         append mgu p@(Predicate True _ _) = merge mgu <$> resolve (substPred mgu p) rules
         append mgu p = if null $ resolve (substPred mgu p) rules then [mgu] else []
+        
+simplify :: [Predicate] -> (Predicate, Rule) 
+simplify preds = (goal, Rule goal $ preds)
+  where goal = Predicate True "*" . nub $ terms preds
+        terms []                     = []
+        terms ((Predicate _ _ t):ps) = t ++ terms ps

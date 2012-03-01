@@ -2,7 +2,7 @@ module Main where
 
 import Control.Monad
 
-import Control.Applicative ((<$>), (<$), (<*))
+import Control.Applicative ((<$), (<*))
 import Data.List (intercalate)
 
 import System.Environment
@@ -40,8 +40,16 @@ main = do args <- getArgs
 run :: FilePath -> IO ()
 run file = do source <- readFile file
               let program = parse rules file source
-              repl "?-" $ go program . parse query "<interactive>"
-                where go _ (Left err)   = putStrLn $ "Error: " ++ show err
-                      go prog (Right q) = case resolve q <$> prog of
-                        Left err -> putStrLn $ "Error: " ++ show err
-                        Right a  -> foldM_ (\ () b -> () <$ putStr b <* getLine) () $ showResult q a 
+              repl "?-" $ go . extractQuery program
+                where go (Left err)        = putStrLn $ "Error: " ++ show err
+                      go (Right (prog, q)) = printResults q $ resolve q prog
+
+extractQuery program input = do source  <- program
+                                queries <- parse query "<interactive>" input
+                                let (q,r) = simplify queries
+                                return (r:source, q)
+
+printResults :: Predicate -> [MGU] -> IO ()
+printResults q a = foldM_ (\ () b -> () <$ putStr b <* getLine) () $ showResult q a 
+
+             
