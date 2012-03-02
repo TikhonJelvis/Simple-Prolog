@@ -16,7 +16,7 @@ type Parsed = Either ParseError
 
 showResult :: Predicate -> [MGU] -> [String]
 showResult _ []      = ["No"]
-showResult q res = showMgu . filter (contains (Pred q) . Var . fst) <$> res
+showResult q res = showMgu . simplify . filter (contains (Pred q) . Var . fst) . reverse <$> res
   where showMgu []  = "Yes"
         showMgu mgu = intercalate " " $ map showBinding mgu
         showBinding (n,v) = showName n ++ " = " ++ showVal v
@@ -49,7 +49,7 @@ run file = do source <- readFile file
 extractQuery :: Parsed [Rule] -> String -> Parsed ([Rule], Predicate)
 extractQuery program input = do source  <- program
                                 queries <- parse query "<interactive>" input
-                                let (q,r) = simplify queries
+                                let (q,r) = disjoin queries
                                 return (r:source, q)
 
 printResults :: Predicate -> [MGU] -> IO ()

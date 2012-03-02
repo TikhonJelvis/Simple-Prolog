@@ -1,9 +1,9 @@
-module Prolog.Interpreter (simplify, subst, contains, resolve,
+module Prolog.Interpreter (simplify, disjoin, subst, contains, resolve,
                            Term(..), Name(..), Rule(..), Predicate(..), MGU)  where
 
 import Control.Applicative   ((<$>), (<*>))
 import Control.Arrow  (second)
-import Data.List (nub)
+import Data.List (find, nub)
 import Control.Monad
 import Data.Maybe
 
@@ -59,6 +59,14 @@ resolve goal rules = mapMaybe match (freshen <$> rules) >>= exec
         append mgu p@(Predicate True _ _) = merge mgu <$> resolve (substPred mgu p) (freshen <$> rules)
         append mgu p = if null . resolve (substPred mgu p) $ freshen <$> rules then [mgu] else []
         
-simplify :: [Predicate] -> (Predicate, Rule) 
-simplify preds = (goal, Rule goal $ preds)
+disjoin :: [Predicate] -> (Predicate, Rule) 
+disjoin preds = (goal, Rule goal $ preds)
   where goal = Predicate True "*" . nub $ preds >>= \ (Predicate _ _ t) -> t
+        
+simplify :: MGU -> MGU
+simplify []         = []
+simplify ((n,v):rs) = (n, fromMaybe v $ Var <$> replacement) : rest
+  where replacement = fst <$> find ((== v) . snd) rs
+        rest = case replacement of
+          Nothing -> simplify rs
+          Just r  -> simplify $ filter ((/= r) . fst) rs
