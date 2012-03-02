@@ -1,6 +1,6 @@
 module Prolog.Parse (rules, query) where
 
-import Control.Applicative (liftA2, (<$>), (<*), (*>), (<*>))
+import Control.Applicative (liftA2, (<$>), (<*), (*>), (<*>), (<$))
 
 import Text.ParserCombinators.Parsec
 
@@ -26,10 +26,14 @@ predicate = negated <|> normal True
   where normal active  =  try (list active)
                       <|> Predicate active <$> name <*> args <?> "predicate"
         negated = (string "~" <|> string "\\+") *> spaces *> (normal False)
-        list active = do car <- char '[' *> spaces *> term
-                         char '|' *> spaces
-                         cdr <- term <* char ']' <* spaces
-                         return $ Predicate active "cons" [car, cdr]
+        list active = do char '[' *> spaces
+                         cars <- term `sepBy1` (char ',' *> spaces)
+                         cdr <- rest <* spaces
+                         let end = Predicate active "cons" [last cars, cdr]
+                         return . foldr (cons active) end $ init cars
+        rest =  char '|' *> spaces *> term <* char ']'
+            <|> Atom "nil" <$ char ']'
+        cons active term rest = Predicate active "cons" [term, Pred rest]
 
 term :: Parser Term
 term = try (Pred <$> predicate) <|> atom <|> variable <?> "term"
