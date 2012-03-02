@@ -25,8 +25,9 @@ merge left right = left ++ (second (subst left) <$> right)
 freshen :: Rule -> Rule
 freshen (Rule hd body) = Rule (freshenPred hd) $ freshenPred <$> body
   where freshenPred (Predicate a n args) = Predicate a n $ freshenTerm <$> args
-        freshenTerm (Var (Name i n))   = Var $ Name (i + 1) n
-        freshenTerm term               = term
+        freshenTerm (Var (Name i n)) = Var $ Name (i + 1) n
+        freshenTerm (Pred p)         = Pred $ freshenPred p
+        freshenTerm term             = term
 
 substPred :: MGU -> Predicate -> Predicate
 substPred mgu (Predicate a n b) = Predicate a n $ subst mgu <$> b
@@ -43,8 +44,7 @@ unify (Predicate _ name1 body1) (Predicate _ name2 body2)
   where combine mgu (left, right) = go mgu (subst mgu left) (subst mgu right)
         go mgu (Var l) r | not (r `contains` Var l) = Just $ (l, r) : mgu
         go mgu l (Var r) | not (l `contains` Var r) = Just $ (r, l) : mgu
-        go mgu (Pred l@(Predicate _ lName _)) (Pred r@(Predicate _ rName _))
-          | lName == rName = merge <$> unify l r <*> Just mgu
+        go mgu (Pred l) (Pred r) = merge <$> unify l r <*> Just mgu
         go mgu l r = if l == r then Just mgu else Nothing 
         
 contains :: Term -> Term -> Bool

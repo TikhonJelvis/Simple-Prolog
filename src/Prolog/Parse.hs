@@ -23,11 +23,17 @@ args = char '(' *> term `sepBy` (char ',' <* spaces) <* char ')' <* spaces
 
 predicate :: Parser Predicate
 predicate = negated <|> normal True
-  where normal active  = Predicate active <$> name <*> args <?> "predicate"
+  where normal active  =  try (list active)
+                      <|> Predicate active <$> name <*> args <?> "predicate"
         negated = (string "~" <|> string "\\+") *> spaces *> (normal False)
+        list active = do car <- char '[' *> spaces *> term
+                         char '|' *> spaces
+                         cdr <- term <* char ']' <* spaces
+                         return $ Predicate active "cons" [car, cdr]
 
 term :: Parser Term
 term = try (Pred <$> predicate) <|> atom <|> variable <?> "term"
+
 
 rule ::  Parser Rule
 rule =  (try (Rule <$> predicate <* string ":-" <* spaces <*> body)

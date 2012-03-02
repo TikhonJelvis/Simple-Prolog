@@ -24,7 +24,8 @@ showResult q res = showMgu . filter (contains (Pred q) . Var . fst) <$> res
         showName (Name i n) = n ++ "_" ++ show i
         showVal (Atom atom) = atom
         showVal (Var n)     = showName n
-        showVal (Pred p)    = show p
+        showVal (Pred p)    = showPred p
+        showPred (Predicate _ n b) = n ++ "(" ++ intercalate ", " (showVal <$> b) ++ ")"
         
 repl :: String -> (String -> IO ()) -> IO ()
 repl prompt action = putStr prompt >> getLine >>= go
@@ -53,5 +54,4 @@ extractQuery program input = do source  <- program
 
 printResults :: Predicate -> [MGU] -> IO ()
 printResults q a = foldM_ (\ () b -> () <$ putStr b <* getLine) () $ showResult q a 
-
              
