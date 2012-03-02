@@ -56,8 +56,8 @@ resolve :: Predicate -> [Rule] -> [MGU]
 resolve goal rules = mapMaybe match (freshen <$> rules) >>= exec
   where match rule@(Rule hd _) = (,) rule <$> unify goal hd
         exec ((Rule _ body), mgu) = join (map . second . subst) <$> foldM append mgu body
-        append mgu p@(Predicate True _ _) = merge mgu <$> resolve (substPred mgu p) rules
-        append mgu p = if null $ resolve (substPred mgu p) rules then [mgu] else []
+        append mgu p@(Predicate True _ _) = merge mgu <$> resolve (substPred mgu p) (freshen <$> rules)
+        append mgu p = if null . resolve (substPred mgu p) $ freshen <$> rules then [mgu] else []
         
 simplify :: [Predicate] -> (Predicate, Rule) 
 simplify preds = (goal, Rule goal $ preds)

@@ -54,4 +54,3 @@ extractQuery program input = do source  <- program
 
 printResults :: Predicate -> [MGU] -> IO ()
 printResults q a = foldM_ (\ () b -> () <$ putStr b <* getLine) () $ showResult q a 
-             
