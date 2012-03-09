@@ -15,7 +15,7 @@ import Prolog.Parse
 type Parsed = Either ParseError
 
 showResult :: Predicate -> [MGU] -> [String]
-showResult _ []      = ["No"]
+showResult _ []  = ["No"]
 showResult q res = showMgu . simplify . filter (contains (Pred q) . Var . fst) . reverse <$> res
   where showMgu []  = "Yes"
         showMgu mgu = intercalate " " $ map showBinding mgu
@@ -25,6 +25,7 @@ showResult q res = showMgu . simplify . filter (contains (Pred q) . Var . fst) .
         showVal (Atom atom) = atom
         showVal (Var n)     = showName n
         showVal (Pred p)    = showPred p
+        showPred (Predicate _ "cons" [a, b]) = "[" ++ showVal a ++ "|" ++ showVal b ++ "]"
         showPred (Predicate _ n b) = n ++ "(" ++ intercalate ", " (showVal <$> b) ++ ")"
         
 repl :: String -> (String -> IO ()) -> IO ()
