@@ -39,13 +39,15 @@ term :: Parser Term
 term = try (Pred <$> predicate) <|> atom <|> variable <?> "term"
 
 
-rule ::  Parser Rule
-rule =  (try (Rule <$> predicate <* string ":-" <* spaces <*> body)
-    <|> (`Rule` []) <$> predicate <?> "rule") <* char '.' <* spaces
-  where body = predicate `sepBy` (char ',' <* spaces) 
+rule ::  Parser [Rule]
+rule = do hd     <- predicate
+          bodies <- end <|> string ":-" *> body `sepBy` (char ';' *> spaces)
+          return $ Rule hd <$> bodies
+  where end  = [[]] <$ char '.' <* spaces
+        body = predicate `sepBy` (char ',' <* spaces) 
 
 rules :: Parser [Rule]
-rules = spaces *> many1 rule
+rules = spaces *> (concat <$> many1 rule)
 
 query :: Parser [Predicate]
 query = spaces *> predicate `sepBy` (char ',' *> spaces) <* char '.' <?> "query"

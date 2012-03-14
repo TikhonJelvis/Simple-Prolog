@@ -67,4 +67,4 @@ simplify :: MGU -> MGU
 simplify []         = []
 simplify ((n,v):rs) = (n, fromMaybe v $ Var <$> replacement) : rest
   where replacement = fst <$> find ((== v) . snd) rs
-        rest = simplify $ if isJust replacement then filter ((/= r) . fst) rs else rs
+        rest = simplify $ if isJust replacement then filter ((/= n) . fst) rs else rs
