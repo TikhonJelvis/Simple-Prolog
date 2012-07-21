@@ -25,8 +25,13 @@ showResult q res = showMgu . simplify . filter (contains (Pred q) . Var . fst) .
         showVal (Atom atom) = atom
         showVal (Var n)     = showName n
         showVal (Pred p)    = showPred p
-        showPred (Predicate _ "cons" [a, b]) = "[" ++ showVal a ++ "|" ++ showVal b ++ "]"
+        showPred list@(Predicate _ "cons" _) = "[" ++ showList list ++ "]"
         showPred (Predicate _ n b) = n ++ "(" ++ intercalate ", " (showVal <$> b) ++ ")"
+
+        showList (Predicate _ _ [a, b]) = showVal a ++ rest b
+          where rest (Pred pr@(Predicate _ "cons" _)) = ", " ++ showList pr
+                rest (Atom "nil")                     = ""
+                rest term                             = "|" ++ showVal term
         
 repl :: String -> (String -> IO ()) -> IO ()
 repl prompt action = putStr prompt >> getLine >>= go
