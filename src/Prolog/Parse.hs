@@ -38,10 +38,9 @@ predicate = negated <|> normal True
 term :: Parser Term
 term = try (Pred <$> predicate) <|> atom <|> variable <?> "term"
 
-
 rule ::  Parser [Rule]
 rule = do hd     <- predicate
-          bodies <- end <|> string ":-" *> body `sepBy` (char ';' *> spaces)
+          bodies <- end <|> string ":-" *> spaces *> (body `sepBy` (char ';' *> spaces)) <* end
           return $ Rule hd <$> bodies
   where end  = [[]] <$ char '.' <* spaces
         body = predicate `sepBy` (char ',' <* spaces) 
