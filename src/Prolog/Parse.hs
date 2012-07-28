@@ -6,32 +6,38 @@ import Text.ParserCombinators.Parsec
 
 import Prolog.Interpreter
 
+comment :: Parser ()
+comment = () <$ (char '%' *> many (noneOf "\n") *> char '\n')
+
+whitespace :: Parser ()
+whitespace = spaces *> optional comment
+
 idChar :: Parser Char
 idChar = letter <|> digit <|> char '_'
 
 name :: Parser String
-name = liftA2 (:) lower (many idChar) <* spaces
+name = liftA2 (:) lower (many idChar) <* whitespace
 
 atom :: Parser Term
 atom = Atom <$> (name <|> many1 digit) <?> "atom"
 
 variable :: Parser Term
-variable = Var . Name 0 <$> liftA2 (:) upper (many idChar) <* spaces <?> "variable"
+variable = Var . Name 0 <$> liftA2 (:) upper (many idChar) <* whitespace <?> "variable"
 
 args :: Parser [Term]
-args = char '(' *> term `sepBy` (char ',' <* spaces) <* char ')' <* spaces
+args = char '(' *> term `sepBy` (char ',' <* whitespace) <* char ')' <* whitespace
 
 predicate :: Parser Predicate
 predicate = negated <|> normal True
   where normal active  =  try (list active)
                       <|> Predicate active <$> name <*> args <?> "predicate"
-        negated = (string "~" <|> string "\\+") *> spaces *> (normal False)
-        list active = do char '[' *> spaces
-                         cars <- term `sepBy1` (char ',' *> spaces)
-                         cdr <- rest <* spaces
+        negated = (string "~" <|> string "\\+") *> whitespace *> (normal False)
+        list active = do char '[' *> whitespace
+                         cars <- term `sepBy1` (char ',' *> whitespace)
+                         cdr <- rest <* whitespace
                          let end = Predicate active "cons" [last cars, cdr]
                          return . foldr (cons active) end $ init cars
-        rest =  char '|' *> spaces *> term <* char ']'
+        rest =  char '|' *> whitespace *> term <* char ']'
             <|> Atom "nil" <$ char ']'
         cons active term rest = Predicate active "cons" [term, Pred rest]
 
@@ -40,13 +46,13 @@ term = try (Pred <$> predicate) <|> atom <|> variable <?> "term"
 
 rule ::  Parser [Rule]
 rule = do hd     <- predicate
-          bodies <- end <|> string ":-" *> spaces *> (body `sepBy` (char ';' *> spaces)) <* end
+          bodies <- end <|> string ":-" *> whitespace *> (body `sepBy` (char ';' *> whitespace)) <* end
           return $ Rule hd <$> bodies
-  where end  = [[]] <$ char '.' <* spaces
-        body = predicate `sepBy` (char ',' <* spaces) 
+  where end  = [[]] <$ char '.' <* whitespace
+        body = predicate `sepBy` (char ',' <* whitespace) 
 
 rules :: Parser [Rule]
-rules = spaces *> (concat <$> many1 rule)
+rules = whitespace *> (concat <$> many1 rule)
 
 query :: Parser [Predicate]
-query = spaces *> predicate `sepBy` (char ',' *> spaces) <* char '.' <?> "query"
+query = whitespace *> predicate `sepBy` (char ',' *> whitespace) <* char '.' <?> "query"
