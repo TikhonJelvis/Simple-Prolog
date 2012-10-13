@@ -1,20 +1,20 @@
 module Prolog.Interpreter (simplify, disjoin, subst, contains, resolve,
                            Term(..), Name(..), Rule(..), Predicate(..), MGU)  where
 
-import Control.Applicative ((<$>), (<*>))
-import Control.Arrow       (second)
-import Data.List           (find, nub)
-import Control.Monad
-import Data.Maybe
+import           Control.Applicative ((<$>), (<*>))
+import           Control.Arrow       (second)
+import           Control.Monad
+import           Data.List           (find, nub)
+import           Data.Maybe
 
 data Term = Atom String
           | Var Name
           | Pred Predicate deriving (Show, Eq)
-                                    
+
 data Name = Name Int String deriving (Show, Eq)
-                                    
+
 data Rule = Rule Predicate [Predicate] deriving (Show, Eq)
-                                            
+
 data Predicate = Predicate Bool String [Term] deriving (Show, Eq)
 
 type MGU = [(Name, Term)] -- This should map variables to values.
@@ -45,8 +45,8 @@ unify (Predicate _ name1 body1) (Predicate _ name2 body2)
         go mgu (Var l) r | not (r `contains` Var l) = Just $ (l, r) : mgu
         go mgu l (Var r) | not (l `contains` Var r) = Just $ (r, l) : mgu
         go mgu (Pred l) (Pred r)                  = merge <$> unify l r <*> Just mgu
-        go mgu l r                                = if l == r then Just mgu else Nothing 
-        
+        go mgu l r                                = if l == r then Just mgu else Nothing
+
 contains :: Term -> Term -> Bool
 contains v1@Var{} v2@Var{}          = v1 == v2
 contains (Pred (Predicate _ _ p)) n = or $ (`contains` n) <$> p
@@ -58,11 +58,11 @@ resolve goal rules = mapMaybe match (freshen <$> rules) >>= exec
         exec ((Rule _ body), mgu) = join (map . second . subst) <$> foldM append mgu body
         append mgu p@(Predicate True _ _) = merge mgu <$> resolve (substPred mgu p) (freshen <$> rules)
         append mgu p = if null . resolve (substPred mgu p) $ freshen <$> rules then [mgu] else []
-        
-disjoin :: [Predicate] -> (Predicate, Rule) 
+
+disjoin :: [Predicate] -> (Predicate, Rule)
 disjoin preds = (goal, Rule goal $ preds)
   where goal = Predicate True "*" . nub $ preds >>= \ (Predicate _ _ t) -> t
-        
+
 simplify :: MGU -> MGU
 simplify []         = []
 simplify ((n,v):rs) = (n, fromMaybe v $ Var <$> replacement) : rest

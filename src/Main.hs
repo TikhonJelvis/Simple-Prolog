@@ -1,16 +1,16 @@
 module Main where
 
-import Control.Monad
+import           Control.Monad
 
-import Control.Applicative ((<$), (<*), (<$>))
-import Data.List (intercalate)
+import           Control.Applicative           ((<$), (<$>), (<*))
+import           Data.List                     (intercalate)
 
-import System.Environment
+import           System.Environment
 
-import Text.ParserCombinators.Parsec
+import           Text.ParserCombinators.Parsec
 
-import Prolog.Interpreter
-import Prolog.Parse
+import           Prolog.Interpreter
+import           Prolog.Parse
 
 type Parsed = Either ParseError
 
@@ -32,7 +32,7 @@ showResult q res = showMgu . simplify . filter (contains (Pred q) . Var . fst) .
           where rest (Pred pr@(Predicate _ "cons" _)) = ", " ++ showList pr
                 rest (Atom "nil")                     = ""
                 rest term                             = "|" ++ showVal term
-        
+
 repl :: String -> (String -> IO ()) -> IO ()
 repl prompt action = putStr prompt >> getLine >>= go
   where go "quit" = return ()
@@ -59,4 +59,4 @@ extractQuery program input = do source  <- program
                                 return (r:source, q)
 
 printResults :: Predicate -> [MGU] -> IO ()
-printResults q a = foldM_ (\ () b -> () <$ putStr b <* getLine) () $ showResult q a 
+printResults q a = foldM_ (\ () b -> () <$ putStr b <* getLine) () $ showResult q a

@@ -1,10 +1,11 @@
 module Prolog.Parse (rules, query) where
 
-import Control.Applicative (liftA2, (<$>), (<*), (*>), (<*>), (<$))
+import           Control.Applicative           (liftA2, (*>), (<$), (<$>), (<*),
+                                                (<*>))
 
-import Text.ParserCombinators.Parsec
+import           Text.ParserCombinators.Parsec
 
-import Prolog.Interpreter
+import           Prolog.Interpreter
 
 comment :: Parser ()
 comment = () <$ (char '%' *> many (noneOf "\n") *> char '\n')
@@ -37,7 +38,7 @@ predicate = negated <|> normal True
                          cdr <- rest <* whitespace
                          let end = Predicate active "cons" [last cars, cdr]
                          return . foldr (cons active) end $ init cars
-        rest =  char '|' *> whitespace *> term <* char ']'
+        rest =  whitespace *> char '|' *> whitespace *> term <* char ']'
             <|> Atom "nil" <$ char ']'
         cons active term rest = Predicate active "cons" [term, Pred rest]
 
@@ -49,7 +50,7 @@ rule = do hd     <- predicate
           bodies <- end <|> string ":-" *> whitespace *> (body `sepBy` (char ';' *> whitespace)) <* end
           return $ Rule hd <$> bodies
   where end  = [[]] <$ char '.' <* whitespace
-        body = predicate `sepBy` (char ',' <* whitespace) 
+        body = predicate `sepBy` (char ',' <* whitespace)
 
 rules :: Parser [Rule]
 rules = whitespace *> (concat <$> many1 rule)
