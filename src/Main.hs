@@ -27,7 +27,6 @@ showResult q res = showMgu . simplify . filter (contains (Pred q) . Var . fst) .
         showVal (Pred p)    = showPred p
         showPred list@(Predicate _ "cons" _) = "[" ++ showList list ++ "]"
         showPred (Predicate _ n b) = n ++ "(" ++ intercalate ", " (showVal <$> b) ++ ")"
-
         showList (Predicate _ _ [a, b]) = showVal a ++ rest b
           where rest (Pred pr@(Predicate _ "cons" _)) = ", " ++ showList pr
                 rest (Atom "nil")                     = ""
@@ -59,4 +58,6 @@ extractQuery program input = do source  <- program
                                 return (r:source, q)
 
 printResults :: Predicate -> [MGU] -> IO ()
-printResults q a = foldM_ (\ () b -> () <$ putStr b <* getLine) () $ showResult q a
+printResults q a = go $ showResult q a
+  where go []     = return ()
+        go (r:rs) = putStr r >> getLine >>= \ l -> when (';' `elem` l) $ go rs
