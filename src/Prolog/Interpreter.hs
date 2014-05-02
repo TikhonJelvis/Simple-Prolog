@@ -17,7 +17,7 @@ data Rule = Rule Predicate [Predicate] deriving (Show, Eq)
 
 data Predicate = Predicate Bool String [Term] deriving (Show, Eq)
 
-type MGU = [(Name, Term)] -- This should map variables to values.
+type MGU = [(Name, Term)] -- Most general unifier: maps variables to values.
 
 merge :: MGU -> MGU -> MGU
 merge left right = left ++ (second (subst left) <$> right)
