@@ -1,13 +1,13 @@
 module Main where
 
-import           Control.Monad
+import           Control.Monad                 (foldM, when)
 
 import           Control.Applicative           ((<$), (<$>), (<*))
 import           Data.List                     (intercalate)
 
-import           System.Environment
+import qualified System.Environment            as Env
 
-import           Text.ParserCombinators.Parsec
+import           Text.ParserCombinators.Parsec (ParseError, parse)
 
 import           Prolog.Interpreter
 import           Prolog.Parse
@@ -38,7 +38,7 @@ repl prompt action = putStr prompt >> getLine >>= go
         go inp    = action inp >> repl prompt action
 
 main :: IO ()
-main = do args <- getArgs
+main = do args <- Env.getArgs
           case args of
             []     -> putStrLn "Please specify a file to run."
             [file] -> run file
