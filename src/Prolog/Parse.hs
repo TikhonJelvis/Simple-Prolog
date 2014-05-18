@@ -2,16 +2,17 @@ module Prolog.Parse (rules, query) where
 
 import           Control.Applicative           (liftA2, (*>), (<$), (<$>), (<*),
                                                 (<*>))
+import           Control.Monad                 (void)
 
 import           Text.ParserCombinators.Parsec
 
 import           Prolog.Interpreter
 
 comment :: Parser ()
-comment = () <$ (char '%' *> many (noneOf "\n") *> char '\n')
+comment = () <$ (char '%' *> many (noneOf "\n") *> char '\n') <?> "comment"
 
 whitespace :: Parser ()
-whitespace = spaces *> optional comment
+whitespace = skipMany (void space <|> comment) <?> "whitespace"
 
 idChar :: Parser Char
 idChar = letter <|> digit <|> char '_'
