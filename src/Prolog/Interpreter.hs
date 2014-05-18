@@ -2,10 +2,9 @@ module Prolog.Interpreter (simplify, disjoin, subst, contains, resolve,
                            Term(..), Name(..), Rule(..), Predicate(..), MGU)  where
 
 import           Control.Applicative ((<$>), (<*>))
-import           Control.Arrow       (second)
-import           Control.Monad
+import           Control.Monad       (foldM, join)
 import           Data.List           (find, nub)
-import           Data.Maybe
+import           Data.Maybe          (isJust, fromMaybe, mapMaybe)
 
 data Term = Atom String
           | Var Name
@@ -17,10 +16,10 @@ data Rule = Rule Predicate [Predicate] deriving (Show, Eq)
 
 data Predicate = Predicate Bool String [Term] deriving (Show, Eq)
 
-type MGU = [(Name, Term)] -- Most general unifier: maps variables to values.
+type MGU = [(Name, Term)]
 
 merge :: MGU -> MGU -> MGU
-merge left right = left ++ (second (subst left) <$> right)
+merge left right = left ++ map (\ (name, term) -> (name, subst left term)) right
 
 freshen :: Rule -> Rule
 freshen (Rule hd body) = Rule (freshenPred hd) $ freshenPred <$> body
@@ -55,7 +54,8 @@ contains _ _                        = False
 resolve :: Predicate -> [Rule] -> [MGU]
 resolve goal rules = mapMaybe match (freshen <$> rules) >>= exec
   where match rule@(Rule hd _) = (,) rule <$> unify goal hd
-        exec ((Rule _ body), mgu) = join (map . second . subst) <$> foldM append mgu body
+        exec ((Rule _ body), mgu) = map go $ foldM append mgu body
+        go mgu = map (\ (name, term) -> (name, subst mgu term)) mgu
         append mgu p@(Predicate True _ _) = merge mgu <$> resolve (substPred mgu p) (freshen <$> rules)
         append mgu p = if null . resolve (substPred mgu p) $ freshen <$> rules then [mgu] else []
 
