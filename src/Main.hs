@@ -16,7 +16,7 @@ type Parsed = Either ParseError
 
 showResult :: Predicate -> [MGU] -> [String]
 showResult _ []  = ["No"]
-showResult q res = showMgu . simplify . filter (contains (Pred q) . Var . fst) . reverse <$> res
+showResult q res = showMgu . filter (contains (Pred q) . Var . fst) . simplify . reverse <$> res
   where showMgu []  = "Yes"
         showMgu mgu = intercalate " " $ map showBinding mgu
         showBinding (n,v) = showName n ++ " = " ++ showVal v

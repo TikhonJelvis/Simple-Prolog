@@ -19,7 +19,7 @@ data Predicate = Predicate Bool String [Term] deriving (Show, Eq)
 type MGU = [(Name, Term)]
 
 merge :: MGU -> MGU -> MGU
-merge left right = left ++ map (\ (name, term) -> (name, subst left term)) right
+merge m₁ m₂ = m₁ ++ [(v, subst m₁ t) | (v, t) <- m₂, Var v /= t]
 
 freshen :: Rule -> Rule
 freshen (Rule hd body) = Rule (freshenPred hd) $ freshenPred <$> body
@@ -56,15 +56,14 @@ resolve goal rules = mapMaybe match (freshen <$> rules) >>= exec
   where match rule@(Rule hd _) = (,) rule <$> unify goal hd
         exec ((Rule _ body), mgu) = map go $ foldM append mgu body
         go mgu = map (\ (name, term) -> (name, subst mgu term)) mgu
-        append mgu p@(Predicate True _ _) = merge mgu <$> resolve (substPred mgu p) (freshen <$> rules)
-        append mgu p = if null . resolve (substPred mgu p) $ freshen <$> rules then [mgu] else []
+        append mgu p@(Predicate True _ _) =
+          merge mgu <$> resolve (substPred mgu p) (freshen <$> rules)
+        append mgu p =
+          if null . resolve (substPred mgu p) $ freshen <$> rules then [mgu] else []
 
 disjoin :: [Predicate] -> (Predicate, Rule)
 disjoin preds = (goal, Rule goal $ preds)
   where goal = Predicate True "*" . nub $ preds >>= \ (Predicate _ _ t) -> t
 
 simplify :: MGU -> MGU
-simplify []         = []
-simplify ((n,v):rs) = (n, fromMaybe v $ Var <$> replacement) : rest
-  where replacement = fst <$> find ((== v) . snd) rs
-        rest = simplify $ if isJust replacement then filter ((/= n) . fst) rs else rs
+simplify mgu = foldr (\ (v, t) mgu' -> (v, subst mgu t) : mgu') [] mgu
