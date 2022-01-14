@@ -6,6 +6,7 @@ import           Control.Applicative           ((<$), (<$>), (<*))
 import           Data.List                     (intercalate)
 
 import qualified System.Environment            as Env
+import           System.IO                     (hFlush, stdout)
 
 import           Text.ParserCombinators.Parsec (ParseError, parse)
 
@@ -33,7 +34,7 @@ showResult q res = showMgu . filter (contains (Pred q) . Var . fst) . simplify .
                 rest term                             = "|" ++ showVal term
 
 repl :: String -> (String -> IO ()) -> IO ()
-repl prompt action = putStr prompt >> getLine >>= go
+repl prompt action = putStr prompt >> hFlush stdout >> getLine >>= go
   where go "quit" = return ()
         go inp    = action inp >> repl prompt action
 
@@ -47,7 +48,7 @@ main = do args <- Env.getArgs
 run :: FilePath -> IO ()
 run file = do source <- readFile file
               let program = parse rules file source
-              repl "?-" $ go . extractQuery program
+              repl "?- " $ go . extractQuery program
   where go (Left err)        = putStrLn $ "Error: " ++ show err
         go (Right (prog, q)) = printResults q $ resolve q prog
 
@@ -60,4 +61,4 @@ extractQuery program input = do source  <- program
 printResults :: Predicate -> [MGU] -> IO ()
 printResults q a = go $ showResult q a
   where go []     = return ()
-        go (r:rs) = putStr r >> getLine >>= \ l -> when (';' `elem` l) $ go rs
+        go (r:rs) = putStr r >> hFlush stdout >> getLine >>= \ l -> when (';' `elem` l) $ go rs
